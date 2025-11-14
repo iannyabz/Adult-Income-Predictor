@@ -1,5 +1,5 @@
 ---
-title: "Stat 1500 Group project"
+title: "Adult Income Prediction"
 author: "Ian Nyabereka, Ike Nyabereka, Anthony Delaney, Fawwaz Ibrahim"
 date: "2025-04-02"
 output:
@@ -105,3 +105,4 @@ anova_model <- aov(Income ~ as.factor(Education_Num), data = df_clean)
 summary(anova_model)
 TukeyHSD(anova_model)
 ```
+
