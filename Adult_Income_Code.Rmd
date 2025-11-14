@@ -1,0 +1,107 @@
+---
+title: "Stat 1500 Group project"
+author: "Ian Nyabereka, Ike Nyabereka, Anthony Delaney, Fawwaz Ibrahim"
+date: "2025-04-02"
+output:
+  pdf_document: default
+  html_document: default
+  word_document: default
+---
+
+```{r setup, include=FALSE}
+library(ggplot2)
+library(caret)
+library(rpart)
+library(rpart.plot)
+library(randomForest)
+```
+
+```{r load-data}
+df = read.csv(unz("C:/Users/ianny/OneDrive/Documents/Textbooks , Notes and Assignments/Stats/1500/Group Project/adult.zip", 
+                      "adult.data"), 
+              header = FALSE, 
+              na.strings = "?", 
+              stringsAsFactors = FALSE)
+
+colnames(df) = c('Age','Work_Class','Fnlwgt','Education','Education_Num','Marital_Status',
+                 'Occupation','Relationship_Status','Race','sex','Capital_Gain',
+                 'Capital_Loss','Hrs_wrked_per_wk','Native_Country','Income')
+
+df = as.data.frame(lapply(df, trimws), stringsAsFactors = FALSE)
+
+df[df == "?"] = NA
+
+# Percentage of missing values
+percentage1 <- sum(is.na(df$Native_Country)) / nrow(df) * 100
+percentage2 <- sum(is.na(df$Occupation)) / nrow(df) * 100
+percentage3 <- sum(is.na(df$Work_Class)) / nrow(df) * 100
+percentage1; percentage2; percentage3
+
+# Remove rows with any NA values
+df_clean = na.omit(df)
+```
+```{r convert-data}
+df_clean$Income = ifelse(df_clean$Income == ">50K", 1, 0)
+df_clean$sex = ifelse(df_clean$sex == "Male", 1, 0)
+df_clean$Age = as.numeric(df_clean$Age)
+df_clean$Education_Num = as.numeric(df_clean$Education_Num)
+df_clean$Capital_Gain = as.numeric(df_clean$Capital_Gain)
+df_clean$Capital_Loss = as.numeric(df_clean$Capital_Loss)
+df_clean$Hrs_wrked_per_wk = as.numeric(df_clean$Hrs_wrked_per_wk)
+```
+```{r class-imbalance}
+# Check class distribution
+table(df_clean$sex)
+table(df_clean$Education_Num)
+```
+```{r desc```{r eda-plots}
+# Education vs Income
+ggplot(df_clean, aes(x = Education_Num, fill = as.factor(Income))) +
+  geom_bar(position = "fill") +
+  labs(title = "Income Distribution by Education Level", x = "Education Level", y = "Proportion") +
+  theme_minimal()
+
+# Sex vs Education
+ggplot(df_clean, aes(x = factor(sex), y = Education_Num, fill = factor(sex))) +
+  geom_boxplot() +
+  labs(title = "Education Level by Gender", x = "Sex (0=F, 1=M)", y = "Education Level")
+
+# Income vs Sex
+ggplot(df_clean, aes(x = factor(sex), fill = factor(Income))) +
+  geom_bar(position = 'fill') +
+  labs(title = 'Income by Sex', x = 'Sex (0=F, 1=M)', y = 'Proportion') +
+  scale_fill_manual(values = c("red3", "green4"), labels = c("<=50K", ">50K"))
+
+# Income vs Sex vs Education
+ggplot(df_clean, aes(x = Education_Num, fill = factor(Income))) +
+  geom_bar(position = "fill") +
+  facet_wrap(~ sex) +
+  labs(title = "Income vs. Sex vs. Education Level", x = "Education Level", y = "Proportion")
+```
+```{r logit-model}
+logit_model <- glm(Income ~ Education_Num + sex, data = df_clean, family = binomial())
+summary(logit_model)
+exp(coef(logit_model))
+```
+```{r decision-tree}
+tree_model <- rpart(Income ~ Education_Num + sex, data = df_clean, method = "class")
+rpart.plot(tree_model)
+```
+```{r random-forest}
+rf_model <- randomForest(factor(Income) ~ Education_Num + sex, data = df_clean, importance = TRUE)
+varImpPlot(rf_model)
+```
+```{r linear-model}
+df_clean$Income_Continuous <- ifelse(df_clean$Income == 1, 50000 + runif(nrow(df_clean)), 
+                                     25000 + runif(nrow(df_clean)))
+lm_model <- lm(Income_Continuous ~ Education_Num + sex, data = df_clean)
+summary(lm_model)
+```
+```{r t-test}
+t.test(Income ~ sex, data = df_clean)
+```
+```{r anova}
+anova_model <- aov(Income ~ as.factor(Education_Num), data = df_clean)
+summary(anova_model)
+TukeyHSD(anova_model)
+```
